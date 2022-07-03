@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <meta http-equiv='X-UA-Compatible' content='IE=edge'>
+    <title>Chat</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <style>
+        form {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        button {
+            height: 25px;
+            background-color: #bad7ec;
+            border: none;
+            padding: 5px;        
+        }
+
+        input {
+            border: solid 4px #bad7ec;
+            padding: 3px;
+        }
+
+        #chatBox {
+            margin-top: 8px;
+            border: solid 4px #bad7ec;
+            min-height: 300px;
+            display: flex;
+            flex-direction: column;            
+        }
+
+        #chatBox.active {
+            background-color: lightgoldenrodyellow;
+        }
+
+        #chatBox .message {
+            padding: 10px;
+            margin: 5px;
+            border: solid 4px #bad7ec;
+            border-radius: 10px;
+        }
+
+        #chatBox .message.out {
+            background-color: azure;
+            align-self: flex-start;
+        }
+
+        #chatBox .message.in {
+            background-color: ivory;
+            align-self: flex-end;
+        }
+
+    </style>
+</head>
+<body>
+    <form>
+        <input id="textToSend" placeholder="Здесь вводится текст сообщения" type="text">
+        <button id="sendMessageButton">
+            Отправить
+        </button>
+        <button id="sendGeoButton">
+            Гео-локация
+        </button>
+    </form>
+    <div id="chatBox">
+        <!-- <span class="message out">mmmkjklj </span>
+        <span class="message in">mmliklkjlmkjklj </span> -->
+    </div>
+    <script>
+        const wsUri = "wss://echo-ws-service.herokuapp.com";
+        // Локальный сервер из папки EchoServer
+        //const wsUri = "ws://localhost:9000";
+        let websocket = null;
+        let toSend = [];
+
+        sendMessageButton.onclick = function(e) {
+            e.preventDefault();
+
+            sendMessage(textToSend.value);
+            textToSend.value = "";
+        }
+
+        sendGeoButton.onclick = function(e) {
+            e.preventDefault();
+            
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition((position) => {
+                    let latitude = position.coords.latitude;
+                    let longitude = position.coords.longitude;
+                    sendMessage(`https://www.openstreetmap.org/#map=18/${latitude}/${longitude}`);
+                });
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", function(){
+            createSocket();
+        });
+
+        function createSocket() {
+            websocket = new WebSocket(wsUri);
+            websocket.onopen = function(evt) {
+                chatBox.classList.add("active");
+                toSend.forEach(msg => websocket.send(msg));
+                toSend = [];
+            };
+
+            websocket.onclose = function(evt) {
+                chatBox.classList.remove("active");
+                websocket = null;
+            };
+
+            websocket.onmessage = function(evt) {
+                let message = evt.data;
+                
+                if (message.startsWith(`https://www.openstreetmap.org`))
+                {
+                    return;
+                }
+                
+                showReply(evt.data);
+            };
+
+            websocket.onerror = function(evt) {
+                alert("Мы покинули чат")
+                websocket = null;
+            };
+        }
+
+        function sendMessage(msg) {
+            if (msg == "") {
+                return;
+            }
+
+            if (websocket == null)
+            {
+                createSocket();
+            }
+
+            showMessage(msg);
+
+            if (websocket !== null && websocket.readyState == 1)
+            {
+                websocket.send(msg);
+            }
+            else
+            {
+                toSend.push(msg);
+            }
+        }
+
+        function showMessage(msg) {
+            chatBox.innerHTML += `<span class="message out">${msg}</span>`;
+        }
+
+        function showReply(msg) {
+            chatBox.innerHTML += `<span class="message in">${msg}</span>`;
+        }
+    </script>
+</body>
+</html>
