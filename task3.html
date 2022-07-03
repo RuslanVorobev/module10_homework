@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
@@ -17,7 +18,7 @@
             height: 25px;
             background-color: #bad7ec;
             border: none;
-            padding: 5px;        
+            padding: 5px;
         }
 
         input {
@@ -30,7 +31,7 @@
             border: solid 4px #bad7ec;
             min-height: 300px;
             display: flex;
-            flex-direction: column;            
+            flex-direction: column;
         }
 
         #chatBox.active {
@@ -53,9 +54,9 @@
             background-color: ivory;
             align-self: flex-end;
         }
-
     </style>
 </head>
+
 <body>
     <form>
         <input id="textToSend" placeholder="Здесь вводится текст сообщения" type="text">
@@ -77,16 +78,16 @@
         let websocket = null;
         let toSend = [];
 
-        sendMessageButton.onclick = function(e) {
+        sendMessageButton.onclick = function (e) {
             e.preventDefault();
 
             sendMessage(textToSend.value);
             textToSend.value = "";
         }
 
-        sendGeoButton.onclick = function(e) {
+        sendGeoButton.onclick = function (e) {
             e.preventDefault();
-            
+
             if ("geolocation" in navigator) {
                 navigator.geolocation.getCurrentPosition((position) => {
                     let latitude = position.coords.latitude;
@@ -96,35 +97,34 @@
             }
         }
 
-        document.addEventListener("DOMContentLoaded", function(){
+        document.addEventListener("DOMContentLoaded", function () {
             createSocket();
         });
 
         function createSocket() {
             websocket = new WebSocket(wsUri);
-            websocket.onopen = function(evt) {
+            websocket.onopen = function (evt) {
                 chatBox.classList.add("active");
                 toSend.forEach(msg => websocket.send(msg));
                 toSend = [];
             };
 
-            websocket.onclose = function(evt) {
+            websocket.onclose = function (evt) {
                 chatBox.classList.remove("active");
                 websocket = null;
             };
 
-            websocket.onmessage = function(evt) {
+            websocket.onmessage = function (evt) {
                 let message = evt.data;
-                
-                if (message.startsWith(`https://www.openstreetmap.org`))
-                {
+
+                if (message.startsWith(`https://www.openstreetmap.org`)) {
                     return;
                 }
-                
+
                 showReply(evt.data);
             };
 
-            websocket.onerror = function(evt) {
+            websocket.onerror = function (evt) {
                 alert("Мы покинули чат")
                 websocket = null;
             };
@@ -135,19 +135,16 @@
                 return;
             }
 
-            if (websocket == null)
-            {
+            if (websocket == null) {
                 createSocket();
             }
 
             showMessage(msg);
 
-            if (websocket !== null && websocket.readyState == 1)
-            {
+            if (websocket !== null && websocket.readyState == 1) {
                 websocket.send(msg);
             }
-            else
-            {
+            else {
                 toSend.push(msg);
             }
         }
@@ -161,4 +158,5 @@
         }
     </script>
 </body>
+
 </html>
